@@ -72,6 +72,11 @@ module roks_cluster {
     cos_id                          = module.resources.cos_id
     kms_guid                        = module.resources.kms_guid
     ibm_managed_key_id              = module.resources.ibm_managed_key_id
+    # Logging and Monitoring Variables
+    logdna_crn                      = module.resources.logdna_crn
+    logdna_guid                     = module.resources.logdna_guid
+    sysdig_crn                      = module.resources.sysdig_crn
+    sysdig_guid                     = module.resources.sysdig_guid
 }
 
 ##############################################################################

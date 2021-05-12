@@ -69,3 +69,22 @@ variable cos_plan {
 }
 
 ##############################################################################
+
+
+##############################################################################
+# Logging and Monitoring Variables
+##############################################################################
+
+variable logdna_plan {
+  description = "Plan for LogDNA"
+  type        = string
+  default     = "7-day"
+}
+
+variable sysdig_plan {
+  description = "Plan for Sysdig"
+  type        = string
+  default     = "graduated-tier"
+}
+
+##############################################################################

@@ -203,4 +203,24 @@ variable ibm_managed_key_id {
     type        = string
 }
 
+variable logdna_crn {
+    description = "CRN of LogDNA Instance"
+    type        = string
+}
+
+variable logdna_guid {
+    description = "GUID of LogDNA instance"
+    type        = string
+}
+
+variable sysdig_crn {
+    description = "CRN of Sysdig Instance"
+    type        = string
+}
+
+variable sysdig_guid {
+    description = "GUID of Sysdig instance"
+    type        = string
+}
+
 ##############################################################################

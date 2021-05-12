@@ -31,8 +31,8 @@ resource ibm_is_instance windows_vsi {
 #ps1_sysnative
 echo "frog1" > C:\frog1.txt
 Try {
-  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-  iex(New-Object Net.WebClient).DownloadString("https://clis.cloud.ibm.com/install/powershell")
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+iex(New-Object Net.WebClient).DownloadString("https://clis.cloud.ibm.com/install/powershell")
 }
 Catch
 {
@@ -50,7 +50,7 @@ echo "frog2" > C:\frog2.txt
 
 
 ##############################################################################
-# Provision Floating IP for Linux VSI
+# Provision Floating IP for Windows VSI
 ##############################################################################
 
 resource ibm_is_floating_ip windows_vsi_fip {
