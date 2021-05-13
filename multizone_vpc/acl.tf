@@ -42,6 +42,13 @@ locals {
                         direction   = "inbound"
                   },
                   {
+                        name        = "roks-create-worker-nodes-outbound"
+                        action      = "allow"
+                        destination = "161.26.0.0/16"
+                        source      = "0.0.0.0/0"
+                        direction   = "inbound"
+                  },
+                  {
                         name        = "roks-nodes-to-service-inbound"
                         action      = "allow"
                         source      = "166.8.0.0/14"

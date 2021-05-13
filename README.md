@@ -12,11 +12,11 @@ This template creates a multizone VPC, an OpenShift cluster on that VPC, and bas
 
 ## IBM Cloud Resources
 
+This module creates IBM Cloud resources that exist outside of the VPC. These resources can be found in the [./resources](./resources) module.
+
 ### Resources
 
 This module creates an IBM Cloud Object Stroage instance required for the creation of an OpenShift cluster. This module also creates a Key Protect instance and a Key Protect Root Key to encrypt the cluster. To ensure that the COS instance has access to the cluster, an authorization policy is created to allow the Key Protect instance to read from the COS instance.
-
-These resources can be found in the [./resources](./resources) module.
 
 ### Logging and Monitoring
 
@@ -28,9 +28,15 @@ In addition, this module creates a LogDNA instance and a Sysdig instance.
 
 This module creates a VPC with any number of subnets across 1, 2, or 3 zones. These subnets are where the OpenShift cluster will be provisioned. It also creates a single proxy subnet where the bastion Windows and Linux VSI will be created.
 
+The VPC resources can be found in the [multizone_vpc](/multizone_vpc) folder.
+
+-----
+
 ### Proxy Subnet
 
+In addition to the subnets created for the cluster, a proxy subnet is created in zone 1 by default. A public gateway is attached to this subnet to allow the VSI provisioned inside to communicate with the internet.
 
+-----
 
 ### Access Control List
 
@@ -38,55 +44,57 @@ The VPC in this template uses an Access Control List to direct traffic. This tra
 
 The following ACL Rules are created automatically on provision:
 
-#### Inbound Rules
+#### Static ACL Rules
 
-##### Static Inbound Rules
+These ACL rules will be automatically created for the VPC regardless of subnet CIDR blocks:
 
-Rule                                                          | Allow / Deny | Protocol | Source         | Source Port   | Destination | Desination Port
---------------------------------------------------------------|--------------|----------|----------------|---------------|-------------|-----------------
-Allow Worker Nodes to be Created                              | Allow        | All      | 161.26.0.0/16  | -             | 0.0.0.0/0   | -
-Allow communication to Services over Private Service Endpoint | Allow        | All      | 166.8.0.0/14   | -             | 0.0.0.0/0   | -
-Allow incoming traffic requests to apps on worker nodes       | Allow        | TCP      | 0.0.0.0/0      | 30000 - 32767 | 0.0.0.0/0   | -
-Allow load balancer and ingress app incoming traffic          | Allow        | TCP      | 0.0.0.0/0      | Any           | 0.0.0.0/0   | 443
+Direction | Rule                                                          | Allow / Deny | Protocol | Source         | Source Port   | Destination   | Desination Port
+----------|---------------------------------------------------------------|--------------|----------|----------------|---------------|---------------|-----------------
+Inbound   | Allow Worker Nodes to be Created                              | Allow        | All      | 161.26.0.0/16  | -             | 0.0.0.0/0     | -
+Inbound   | Allow communication to Services over Private Service Endpoint | Allow        | All      | 166.8.0.0/14   | -             | 0.0.0.0/0     | -
+Inbound   | Allow incoming traffic requests to apps on worker nodes       | Allow        | TCP      | 0.0.0.0/0      | 30000 - 32767 | 0.0.0.0/0     | -
+Inbound   | Allow load balancer and ingress app incoming traffic          | Allow        | TCP      | 0.0.0.0/0      | Any           | 0.0.0.0/0     | 443
+Outbound  | Allow Worker Nodes to be Created                              | Allow        | All      | 0.0.0.0/0      | -             | 161.26.0.0/16 | -
+Outbound  | Allow communication to Services over Private Service Endpoint | Allow        | All      | 0.0.0.0/0      | -             | 166.8.0.0/14  | -
+Outbound  | Allow incoming traffic requests to apps on worker nodes       | Allow        | TCP      | 0.0.0.0/0      | 30000 - 32767 | 0.0.0.0/0     | -
+Outbound  | Allow load balancer and ingress app incoming traffic          | Allow        | TCP      | 0.0.0.0/0      | Any           | 0.0.0.0/0     | 443
 
-##### Dynamic Inbound Rules
+#### Dynamic ACL Rules
 
-For each subnet in the VPC, a rule is created to allow inbound traffic from that subnet. In addition, a rule is created to allow all traffic to the proxy VSI subnet. Here is an example of the dynamically created rules using the CIDR blocks found in [variables.tf](variables.tf).
+For each subnet in the VPC, a rule is created to allow inbound and outbound traffic from that subnet. In addition, a rule is created to allow all traffic to the proxy VSI subnet. Here is an example of the dynamically created rules using the CIDR blocks found in [variables.tf](variables.tf).
 
-Allow / Deny | Protocol | Source         | Source Port   | Destination    | Desination Port
--------------|----------|----------------|---------------|----------------|-----------------
-Allow        | All      | 10.10.10.0/28  | -             | 0.0.0.0/0      | -
-Allow        | All      | 10.40.10.0/28  | -             | 0.0.0.0/0      | -
-Allow        | All      | 10.70.10.0/28  | -             | 0.0.0.0/0      | -
-Allow        | All      | 10.100.10.0/28 | -             | 0.0.0.0/0      | -
-Allow        | All      | 0.0.0.0/0      | -             | 10.100.10.0/28 | -
+Direction | Allow / Deny | Protocol | Source         | Source Port   | Destination    | Desination Port
+----------|--------------|----------|----------------|---------------|----------------|-----------------
+Inbound   | Allow        | All      | 10.10.10.0/24  | -             | 0.0.0.0/0      | -
+Inbound   | Allow        | All      | 10.40.10.0/24  | -             | 0.0.0.0/0      | -
+Inbound   | Allow        | All      | 10.70.10.0/24  | -             | 0.0.0.0/0      | -
+Inbound   | Allow        | All      | 10.100.10.0/24 | -             | 0.0.0.0/0      | -
+Inbound   | Allow        | All      | 0.0.0.0/0      | -             | 10.100.10.0/24 | -
+Outbound  | Allow        | All      | 0.0.0.0/0      | -             | 10.10.10.0/24  | -
+Outbound  | Allow        | All      | 0.0.0.0/0      | -             | 10.40.10.0/24  | -
+Outbound  | Allow        | All      | 0.0.0.0/0      | -             | 10.70.10.0/24  | -
+Outbound  | Allow        | All      | 0.0.0.0/0      | -             | 10.100.10.0/24 | -
+Outbound  | Allow        | All      | 10.100.10.0/24 | -             | 0.0.0.0/0      | -
 
-#### Outbound Rules
+#### Adding Additional Rules
 
-##### Static Outbound Rules
+The `multizone_vpc` module accepts an `acl_rules` argument that allows for the creation of additional ACL rules.
 
-Rule                                                          | Allow / Deny | Protocol | Source         | Source Port   | Destination   | Desination Port
---------------------------------------------------------------|--------------|----------|----------------|---------------|---------------|-----------------
-Allow Worker Nodes to be Created                              | Allow        | All      | 0.0.0.0/0      | -             | 161.26.0.0/16 | -
-Allow communication to Services over Private Service Endpoint | Allow        | All      | 0.0.0.0/0      | -             | 166.8.0.0/14  | -
-Allow incoming traffic requests to apps on worker nodes       | Allow        | TCP      | 0.0.0.0/0      | 30000 - 32767 | 0.0.0.0/0     | -
-Allow load balancer and ingress app incoming traffic          | Allow        | TCP      | 0.0.0.0/0      | Any           | 0.0.0.0/0     | 443
+-----
 
-##### Dynamic Outbound Rules
+### Security Group Rule
 
-For each subnet in the VPC, a rule is created to allow outbound traffic from that subnet. In addition, a rule is created to allow all traffic to the proxy VSI subnet. Here is an example of the dynamically created rules using the CIDR blocks found in [variables.tf](variables.tf).
+A security group rule is created for the default VPC security group to allow all inbound traffic within the VPC.
 
-Allow / Deny | Protocol | Source         | Source Port   | Destination    | Desination Port
--------------|----------|----------------|---------------|----------------|-----------------
-Allow        | All      | 0.0.0.0/0      | -             | 10.10.10.0/28  | -
-Allow        | All      | 0.0.0.0/0      | -             | 10.40.10.0/28  | -
-Allow        | All      | 0.0.0.0/0      | -             | 10.70.10.0/28  | -
-Allow        | All      | 0.0.0.0/0      | -             | 10.100.10.0/28 | -
-Allow        | All      | 10.100.10.0/28 | -             | 0.0.0.0/0      | -
+The `multizone_vpc` module accepts a `security_group_rules` argument that allows for the creation of additional rules to be added to the default VPC security group.
 
 -----
 
 ## ROKS Cluster
+
+This module creates a Red Hat OpenShift Cluster across all the subnets created for the [VPC](##VPC) except for the proxy subnet. This module can also dynamically create additional worker pools across the subnet. When the cluster has finished creating, the module will also install LogDNA and Sysdig agents onto the cluster.
+
+The cluster resources can be found in the [roks_cluster](/roks_cluster) folder.
 
 -----
 
@@ -104,8 +112,8 @@ unique_id                       | string                                        
 ibm_region                      | string                                                                               | IBM Cloud region where all resources will be deployed                                                                                                                                                                                                                                                                                                                                                                                                         | 
 resource_group                  | string                                                                               | Name of resource group where all infrastructure will be provisioned                                                                                                                                                                                                                                                                                                                                                                                           | `"asset-development"`
 classic_access                  | bool                                                                                 | Enable VPC Classic Access. Note: only one VPC per region can have classic access                                                                                                                                                                                                                                                                                                                                                                              | `false`
-cidr_blocks                     | object({ zone-1 = list(string) zone-2 = list(string) zone-3 = list(string) })        | An object containing lists of CIDR blocks. Each CIDR block will be used to create a subnet                                                                                                                                                                                                                                                                                                                                                                    | `{`<br>`zone-1 = [`<br>`"10.10.10.0/28",`<br>`],`<br>`zone-2 = [`<br>`"10.40.10.0/28",`<br>`],`<br>`zone-3 = [`<br>`"10.70.10.0/28",`<br>`]`<br>`}`
-proxy_subnet_cidr               | string                                                                               | CIDR subnet for OpenShift Cluster Proxy. This subnet will have an attached public gateway. This subnet will be created in zone 1 of the region.                                                                                                                                                                                                                                                                                                               | `"10.100.10.0/28"`
+cidr_blocks                     | object({ zone-1 = list(string) zone-2 = list(string) zone-3 = list(string) })        | An object containing lists of CIDR blocks. Each CIDR block will be used to create a subnet                                                                                                                                                                                                                                                                                                                                                                    | `{`<br>`zone-1 = [`<br>`"10.10.10.0/24",`<br>`],`<br>`zone-2 = [`<br>`"10.40.10.0/24",`<br>`],`<br>`zone-3 = [`<br>`"10.70.10.0/24",`<br>`]`<br>`}`
+proxy_subnet_cidr               | string                                                                               | CIDR subnet for OpenShift Cluster Proxy. This subnet will have an attached public gateway. This subnet will be created in zone 1 of the region.                                                                                                                                                                                                                                                                                                               | `"10.100.10.0/24"`
 cluster_machine_type            | string                                                                               | The flavor of VPC worker node to use for your cluster. Use `ibmcloud ks flavors` to find flavors for a region.                                                                                                                                                                                                                                                                                                                                                | `"bx2.4x16"`
 workers_per_zone                | number                                                                               | Number of workers to provision in each subnet                                                                                                                                                                                                                                                                                                                                                                                                                 | `2`
 disable_public_service_endpoint | bool                                                                                 | Disable public service endpoint for cluster                                                                                                                                                                                                                                                                                                                                                                                                                   | `true`
