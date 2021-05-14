@@ -14,10 +14,7 @@ This template creates a multizone VPC, an OpenShift cluster on that VPC, and bas
 2. [VPC](##VPC)
     - [Proxy Subnet](###Proxy-Subnet)
     - [Access Control List](###Access-Control-List)
-        - [Static ACL Rules](####Static-ACL-Rules)
-        - [Dynamic ACL Rules](####Dynamic-ACL-Rules)
-        - [Adding Additional Rules](####Adding-Additional-Rules)
-    - [Security Group Rule](###Security-Group-Rule)
+    - [Security Group Rules](###Security-Group-Rule)
 3. [ROKS Cluster](##ROKS-Cluster)
     - [Cluster Logging and Monitoring](###Cluster-Logging-and-Monitoring)
 4. [Bastion VSI](##Bastion-VSI)
@@ -100,7 +97,7 @@ The `multizone_vpc` module accepts an `acl_rules` argument that allows for the c
 
 -----
 
-### Security Group Rule
+### Security Group Rules
 
 A security group rule is created for the default VPC security group to allow all inbound traffic within the VPC.
 
