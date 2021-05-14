@@ -27,7 +27,7 @@ resource ibm_resource_key sysdig_secret {
   resource_instance_id = var.sysdig_crn
 }
 
-resource ibm_ob_logging sysdig_deployment {
+resource ibm_ob_monitoring sysdig_deployment {
   cluster     = ibm_container_vpc_cluster.cluster.id
   instance_id = var.sysdig_guid
   depends_on  = [ ibm_resource_key.sysdig_secret ]

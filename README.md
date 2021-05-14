@@ -18,7 +18,7 @@ This module creates IBM Cloud resources that exist outside of the VPC. These res
 
 This module creates an IBM Cloud Object Stroage instance required for the creation of an OpenShift cluster. This module also creates a Key Protect instance and a Key Protect Root Key to encrypt the cluster. To ensure that the COS instance has access to the cluster, an authorization policy is created to allow the Key Protect instance to read from the COS instance.
 
-### Logging and Monitoring
+### Logging and Monitoring Resources
 
 In addition, this module creates a LogDNA instance and a Sysdig instance.
 
@@ -98,12 +98,48 @@ The cluster resources can be found in the [roks_cluster](/roks_cluster) folder.
 
 -----
 
+### Cluster Logging and Monitoring
+
+This module creates a resource key for the Sysdig and LogDNA resource instances created by the [resources module](##resources). These keys are used to install LogDNA and Sysdig agents onto the cluster after provision.
+
+-----
+
 ## Bastion VSI
+
+This module creates two VSI in the [VPC proxy subnet](###proxysubnet). A linux VSI that uses terraform to create an NLB proxy, and a Windows VSI. Both of these instances can be used to manage the OpenShift cluster.
+
+For each VSI, a floating IP is created to allow connection from your local machine.
+
+-----
+
+### Linux VSI
+
+This VSI to create an NLB Proxy to allow access to the cluster via the Private Service Endpoint. To read more about accessing the cluster through a private service endpoint refer to the [documentation here](https://cloud.ibm.com/docs/containers?topic=containers-access_cluster#access_private_se).
+
+The virtual server by default uses the [install_terraform_vsi](./bastion_vsi/scripts/install_terraform_vsi.sh) script to install terraform, write the script inside the VSI, and run the script.
+
+In addition, the IBM Cloud CLI, kubectl CLI, and OpenShift CLI are installed inside the VSI to test connectivity.
+
+The VSI is created in [bastion_vsi/linux_vsi_and_nlb_proxy.tf](./bastion_vsi/linux_vsi_and_nlb_proxy.tff)
+
+To view the code that will be installed on the VSI, refer to the [./bastion_vsi/scripts/nlb_terraform](./bastion_vsi/scripts/nlb_terraform) folder.
+
+-----
+
+### Windows VSI
+
+The windows VSI uses user data to install `chocolatey` and `kubectl`. Use this script to install the IBM Cloud CLI onto your Windows instance:
+
+```
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+iex(New-Object Net.WebClient).DownloadString('https://clis.cloud.ibm.com/install/powershell')
+```
+
+For more information on connecting to your Windows instance, read the documentation [here](https://cloud.ibm.com/docs/vpc-on-classic-vsi?topic=vpc-on-classic-vsi-connecting-to-your-windows-instance)
 
 -----
 
 ## Architecture Variables
-
 Variable                        | Type                                                                                 | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Default
 ------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |--------
 TF_VERSION                      |                                                                                      | The version of the Terraform engine that's used in the Schematics workspace.                                                                                                                                                                                                                                                                                                                                                                                  | `"0.13"`
@@ -112,8 +148,8 @@ unique_id                       | string                                        
 ibm_region                      | string                                                                               | IBM Cloud region where all resources will be deployed                                                                                                                                                                                                                                                                                                                                                                                                         | 
 resource_group                  | string                                                                               | Name of resource group where all infrastructure will be provisioned                                                                                                                                                                                                                                                                                                                                                                                           | `"asset-development"`
 classic_access                  | bool                                                                                 | Enable VPC Classic Access. Note: only one VPC per region can have classic access                                                                                                                                                                                                                                                                                                                                                                              | `false`
-cidr_blocks                     | object({ zone-1 = list(string) zone-2 = list(string) zone-3 = list(string) })        | An object containing lists of CIDR blocks. Each CIDR block will be used to create a subnet                                                                                                                                                                                                                                                                                                                                                                    | `{`<br>`zone-1 = [`<br>`"10.10.10.0/24",`<br>`],`<br>`zone-2 = [`<br>`"10.40.10.0/24",`<br>`],`<br>`zone-3 = [`<br>`"10.70.10.0/24",`<br>`]`<br>`}`
-proxy_subnet_cidr               | string                                                                               | CIDR subnet for OpenShift Cluster Proxy. This subnet will have an attached public gateway. This subnet will be created in zone 1 of the region.                                                                                                                                                                                                                                                                                                               | `"10.100.10.0/24"`
+cidr_blocks                     | object({ zone-1 = list(string) zone-2 = list(string) zone-3 = list(string) })        | An object containing lists of CIDR blocks. Each CIDR block will be used to create a subnet                                                                                                                                                                                                                                                                                                                                                                    | `{`<br>`zone-1 = [`<br>`"10.10.10.0/24" ],`<br>`zone-2 = [`<br>`"10.40.10.0/24" ],`<br>`zone-3 = [`<br>`"10.70.10.0/24" ]`<br>`}`
+proxy_subnet_cidr               | string                                                                               | CIDR subnet for OpenShift Cluster Proxy. This subnet will have an attached public gateway. This subnet will be created in zone 1 of the region.                                                                                                                                                                                                                                                                                                               | `"10.100.10.0/28"`
 cluster_machine_type            | string                                                                               | The flavor of VPC worker node to use for your cluster. Use `ibmcloud ks flavors` to find flavors for a region.                                                                                                                                                                                                                                                                                                                                                | `"bx2.4x16"`
 workers_per_zone                | number                                                                               | Number of workers to provision in each subnet                                                                                                                                                                                                                                                                                                                                                                                                                 | `2`
 disable_public_service_endpoint | bool                                                                                 | Disable public service endpoint for cluster                                                                                                                                                                                                                                                                                                                                                                                                                   | `true`
@@ -125,6 +161,8 @@ service_endpoints               | string                                        
 kms_plan                        | string                                                                               | Plan for Key Protect                                                                                                                                                                                                                                                                                                                                                                                                                                          | `"tiered-pricing"`
 kms_root_key_name               | string                                                                               | Name of the root key for Key Protect instance                                                                                                                                                                                                                                                                                                                                                                                                                 | `"root-key"`
 cos_plan                        | string                                                                               | Plan for Cloud Object Storage instance                                                                                                                                                                                                                                                                                                                                                                                                                        | `"standard"`
+logdna_plan                     | string                                                                               | Plan for LogDNA                                                                                                                                                                                                                                                                                                                                                                                                                                               | `"7-day"`
+sysdig_plan                     | string                                                                               | Plan for Sysdig                                                                                                                                                                                                                                                                                                                                                                                                                                               | `"graduated-tier"`
 ssh_public_key                  | string                                                                               | ssh public key to use for vsi                                                                                                                                                                                                                                                                                                                                                                                                                                 | 
 linux_vsi_image                 | string                                                                               | Image name used for VSI. Run 'ibmcloud is images' to find available images in a region                                                                                                                                                                                                                                                                                                                                                                        | `"ibm-centos-7-6-minimal-amd64-2"`
 linux_vsi_machine_type          | string                                                                               | VSI machine type. Run 'ibmcloud is instance-profiles' to get a list of regional profiles                                                                                                                                                                                                                                                                                                                                                                      | `"bx2-8x32"`
