@@ -53,7 +53,7 @@ locals {
                         action      = "allow"
                         source      = "166.8.0.0/14"
                         destination = "0.0.0.0/0"
-                        direction   = "outbound"
+                        direction   = "inbound"
                   },
                   {
                         name        = "roks-nodes-to-service-outbound"
