@@ -46,7 +46,7 @@ locals {
                         action      = "allow"
                         destination = "161.26.0.0/16"
                         source      = "0.0.0.0/0"
-                        direction   = "inbound"
+                        direction   = "outbound"
                   },
                   {
                         name        = "roks-nodes-to-service-inbound"
